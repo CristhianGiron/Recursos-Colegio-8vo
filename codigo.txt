@@ -1,0 +1,60 @@
+//Semaforo
+const int VEH_VERDE = 2;
+const int VEH_AMARILLO = 3;
+const int VEH_ROJO = 4;
+const int PEAT_VERDE = 5;
+const int PEAT_ROJO = 6;
+const int BUZZER = 8;
+const int TIEMPO_VERDE = 8000;
+const int TIEMPO_AMARILLO = 3000;
+const int TIEMPO_PREPARACION = 2000;
+const int TIEMPO_CRUCE = 8000;
+const int TIEMPO_CAMBIO = 2000;
+void apagarSemaforos() {
+  digitalWrite(VEH_VERDE, LOW);
+  digitalWrite(VEH_AMARILLO, LOW);
+  digitalWrite(VEH_ROJO, LOW);
+  digitalWrite(PEAT_VERDE, LOW);
+  digitalWrite(PEAT_ROJO, LOW);
+}
+void setup() {
+  pinMode(VEH_VERDE, OUTPUT);
+  pinMode(VEH_AMARILLO, OUTPUT);
+  pinMode(VEH_ROJO, OUTPUT);
+  pinMode(PEAT_VERDE, OUTPUT);
+  pinMode(PEAT_ROJO, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+  apagarSemaforos();
+  digitalWrite(VEH_ROJO, HIGH);
+  digitalWrite(PEAT_ROJO, HIGH);
+  delay(2000);
+}
+void loop() {
+  apagarSemaforos();
+  digitalWrite(VEH_VERDE, HIGH);
+  digitalWrite(PEAT_ROJO, HIGH);
+  delay(TIEMPO_VERDE);
+  digitalWrite(VEH_VERDE, LOW);
+  digitalWrite(VEH_AMARILLO, HIGH);
+  digitalWrite(PEAT_ROJO, HIGH);
+  delay(TIEMPO_AMARILLO);
+  apagarSemaforos();
+  digitalWrite(VEH_ROJO, HIGH);
+  digitalWrite(PEAT_ROJO, HIGH);
+  delay(TIEMPO_PREPARACION);
+  digitalWrite(PEAT_ROJO, LOW);
+  digitalWrite(PEAT_VERDE, HIGH);
+  delay(TIEMPO_CRUCE - 3000);
+  for (int i = 0; i < 3; i++) {
+    digitalWrite(PEAT_VERDE, LOW);
+    tone(BUZZER, 1000);
+    delay(250);
+    digitalWrite(PEAT_VERDE, HIGH);
+    noTone(BUZZER);
+    delay(250);
+  }
+  noTone(BUZZER);
+  digitalWrite(PEAT_VERDE, LOW);
+  digitalWrite(PEAT_ROJO, HIGH);
+  delay(TIEMPO_CAMBIO);
+}
