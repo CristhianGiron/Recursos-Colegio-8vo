@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prueba el semáforo</title>
+<style>
+  :root{--sky:#b3e5fc;--grass:#81c784;--road:#546e7a;--sidewalk:#cfd8dc;--housing:#212121;--red:#ff1744;--yellow:#ffea00;--green:#00e676;--blue:#3f51b5}
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;
+    font-family:'Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+    background:linear-gradient(180deg,#dff2ff,#eef7ee);
+  }
+  .card{width:min(100%,980px);background:#fff;border-radius:22px;box-shadow:0 14px 36px rgba(31,51,71,.16);padding:16px}
+
+  .stage{display:grid;grid-template-columns:auto 1fr;gap:16px}
+  @media (max-width:620px){.stage{grid-template-columns:1fr}}
+
+  .lights{display:flex;gap:14px;justify-content:center}
+  .column{display:flex;flex-direction:column;align-items:center}
+  .badge{font-weight:700;font-size:.8rem;padding:5px 12px;border-radius:999px;margin-bottom:8px}
+  .badge.v{background:#ffe08a;color:#8a4b00}
+  .badge.p{background:#a6e1ff;color:#01579b}
+  .housing{background:var(--housing);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:10px;box-shadow:0 8px 16px rgba(0,0,0,.3)}
+  .light{width:56px;height:56px;border-radius:50%;background:#333;display:grid;place-items:center;transition:background-color .2s,box-shadow .2s}
+  .light svg{width:34px;height:34px;fill:#222;transition:fill .2s}
+  .light.red-on{background:var(--red);box-shadow:0 0 22px var(--red)}
+  .light.yellow-on{background:var(--yellow);box-shadow:0 0 22px var(--yellow)}
+  .light.green-on{background:var(--green);box-shadow:0 0 22px var(--green)}
+  .light.red-on svg,.light.green-on svg{fill:#fff}
+  .pole{width:10px;flex:1;min-height:20px;background:#37474f;border-radius:0 0 4px 4px}
+
+  .scene{
+    position:relative;min-height:300px;border-radius:16px;overflow:hidden;
+    background:linear-gradient(to bottom,var(--sky) 0 8%,var(--grass) 8% 12%,var(--sidewalk) 12% 28%,var(--road) 28% 78%,var(--sidewalk) 78% 100%);
+  }
+  .lane-line{position:absolute;left:0;right:0;top:53%;border-top:4px dashed rgba(255,255,255,.55)}
+  .crosswalk{position:absolute;top:28%;height:50%;width:96px;left:55%;display:flex;flex-direction:column;justify-content:space-evenly}
+  .crosswalk span{display:block;height:15px;background:#fff;border-radius:2px}
+  .stopline{position:absolute;top:28%;height:50%;width:6px;background:#fff;left:calc(55% - 14px)}
+  .car{position:absolute;top:34%;left:0;width:110px;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+  .kid{position:absolute;left:calc(55% + 30px);top:12%;font-size:2.1rem;line-height:1;transition:transform 3.2s linear}
+  .kid.crossing{transform:translateY(190px)}
+  .kid.reset{transition:none}
+  .bubble{
+    position:absolute;left:12px;top:10px;background:#fff;border-radius:14px;padding:6px 12px;
+    font-weight:700;font-size:.95rem;box-shadow:0 3px 8px rgba(0,0,0,.2);border-left:6px solid var(--c,#00c853)
+  }
+
+  .controls{margin-top:14px;display:flex;flex-wrap:wrap;gap:10px}
+  .btn{
+    flex:1 1 130px;border:none;border-radius:12px;padding:13px 12px;font-weight:700;font-size:1rem;color:#fff;cursor:pointer;
+    box-shadow:0 4px 8px rgba(0,0,0,.12);transition:transform .15s,box-shadow .15s;outline:3px solid transparent;outline-offset:2px
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 8px 14px rgba(0,0,0,.18)}
+  .btn:focus-visible{outline-color:var(--blue)}
+  .btn.g{background:#00b95c}.btn.y{background:#ffb300;color:#2b2100}.btn.r{background:#d50000}
+  .btn.sel{outline-color:#27455f}
+  .btn.auto{background:#fff;color:var(--blue);border:2px solid var(--blue);flex:.8 1 110px;position:relative;overflow:hidden}
+  .btn.auto.on{background:var(--blue);color:#fff}
+  .btn.auto i{position:absolute;left:0;bottom:0;height:4px;width:0;background:#ffd600}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="stage">
+    <div class="lights">
+      <div class="column">
+        <div class="badge v">🚗 Autos</div>
+        <div class="housing">
+          <div id="v-red" class="light"></div>
+          <div id="v-yellow" class="light"></div>
+          <div id="v-green" class="light"></div>
+        </div>
+        <div class="pole"></div>
+      </div>
+      <div class="column">
+        <div class="badge p">🚶 Peatones</div>
+        <div class="housing">
+          <div id="p-red" class="light">
+            <svg viewBox="0 0 24 24"><path d="M12,2A2,2 0 0,1 14,4A2,2 0 0,1 12,6A2,2 0 0,1 10,4A2,2 0 0,1 12,2M10.5,22V16H8V11A2,2 0 0,1 10,9H14A2,2 0 0,1 16,11V16H13.5V22H10.5Z"/></svg>
+          </div>
+          <div id="p-green" class="light">
+            <svg viewBox="0 0 24 24"><path d="M13.5,5.5A1.5,1.5 0 1,1 12,4A1.5,1.5 0 0,1 13.5,5.5M11.5,10.16V15H13V19H14.5V14.25L15.91,12.16C16.3,11.57 16.22,10.79 15.72,10.3L14.12,8.7C13.73,8.31 13.1,8.1 12.55,8.26L9.81,9.07V13H11.31V10.61L11.5,10.16Z"/></svg>
+          </div>
+        </div>
+        <div class="pole"></div>
+      </div>
+    </div>
+
+    <div class="scene" id="scene" aria-hidden="true">
+      <div class="bubble" id="bubble"></div>
+      <div class="lane-line"></div>
+      <div class="stopline"></div>
+      <div class="crosswalk"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <svg class="car" id="car" viewBox="0 0 120 56">
+        <rect id="car-body" x="4" y="22" width="112" height="24" rx="9" fill="#1e63d6"/>
+        <path id="car-roof" d="M26 24 L40 6 H82 L98 24Z" fill="#2b78f0"/>
+        <path d="M34 22 L44 10 H60 V22Z M64 22 V10 H80 L90 22Z" fill="#cfe9ff"/>
+        <rect x="108" y="28" width="9" height="7" rx="3" fill="#ffe082"/>
+        <rect x="3" y="28" width="7" height="7" rx="3" fill="#ff5252"/>
+        <circle cx="32" cy="46" r="9" fill="#222"/><circle cx="32" cy="46" r="4" fill="#9e9e9e"/>
+        <circle cx="90" cy="46" r="9" fill="#222"/><circle cx="90" cy="46" r="4" fill="#9e9e9e"/>
+      </svg>
+      <div class="kid" id="kid">🧒</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn g" data-fase="AVANZAR">🟢 Avanzar</button>
+    <button class="btn y" data-fase="PREPARARSE">🟡 Prepararse</button>
+    <button class="btn r" data-fase="DETENERSE">🔴 Cruzar</button>
+    <button class="btn auto" id="auto">▶ Auto<i id="prog"></i></button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const FASES = {
+  AVANZAR:    {luces:['v-green','p-red'],  c:'#00c853', msg:'🚗 Los autos avanzan · 🚶 esperamos'},
+  PREPARARSE: {luces:['v-yellow','p-red'], c:'#ffc400', msg:'⚠️ Los autos frenan · 🚶 seguimos esperando'},
+  DETENERSE:  {luces:['v-red','p-green'],  c:'#ff1744', msg:'🛑 Autos detenidos · 🚶 ¡ya podemos cruzar!'}
+};
+const IDS = ['v-red','v-yellow','v-green','p-red','p-green'];
+const ON = {'v-red':'red-on','v-yellow':'yellow-on','v-green':'green-on','p-red':'red-on','p-green':'green-on'};
+let faseActual = 'AVANZAR';
+
+function cambiar(fase){
+  faseActual = fase;
+  const f = FASES[fase];
+  IDS.forEach(id=>{
+    const el = $(id);
+    el.classList.remove('red-on','yellow-on','green-on');
+    if (f.luces.includes(id)) el.classList.add(ON[id]);
+  });
+  $('bubble').textContent = f.msg;
+  $('bubble').style.setProperty('--c', f.c);
+  document.querySelectorAll('[data-fase]').forEach(b=>b.classList.toggle('sel', b.dataset.fase===fase));
+
+  const kid = $('kid');
+  clearTimeout(kid._t);
+  if (fase === 'DETENERSE'){
+    kid._t = setTimeout(()=>{ if (faseActual==='DETENERSE') kid.classList.add('crossing'); }, 1200);
+  } else if (kid.classList.contains('crossing')){
+    kid.classList.add('reset'); kid.classList.remove('crossing');
+    void kid.offsetWidth; kid.classList.remove('reset');
+  }
+}
+document.querySelectorAll('[data-fase]').forEach(b=>{
+  b.addEventListener('click', ()=>{ pararAuto(); cambiar(b.dataset.fase); });
+});
+
+/* Color distinto cada vez que el auto reaparece */
+const COLORES = [
+  ['#1e63d6','#2b78f0'], // azul
+  ['#d32f2f','#ef5350'], // rojo
+  ['#2e9b4f','#43b866'], // verde
+  ['#f9a825','#ffc236'], // amarillo
+  ['#8e44ad','#a863c4'], // morado
+  ['#ef6c00','#ff8a24'], // naranja
+  ['#e91e8c','#f55aaa'], // rosado
+  ['#00897b','#26a69a'], // turquesa
+  ['#eceff1','#ffffff'], // blanco
+  ['#37474f','#546e7a']  // gris oscuro
+];
+let colorIdx = 0;
+function colorNuevo(){
+  let n; do { n = Math.floor(Math.random()*COLORES.length); } while (n === colorIdx);
+  colorIdx = n;
+  $('car-body').setAttribute('fill', COLORES[n][0]);
+  $('car-roof').setAttribute('fill', COLORES[n][1]);
+}
+
+/* Auto: física simple */
+const scene = $('scene'), car = $('car'), CAR_W = 110;
+let x = -CAR_W, v = 0, last = null;
+const VMAX = 140, ACC = 90, DEC = 120;
+function loop(t){
+  if (last === null) last = t;
+  const dt = Math.min((t-last)/1000, .05); last = t;
+  const W = scene.clientWidth, stopLine = W*0.55 - 14;
+  const dist = stopLine - (x + CAR_W);
+  const frenar = faseActual !== 'AVANZAR' && dist > -2 && x + CAR_W <= stopLine + 2;
+  let target = VMAX;
+  if (frenar){ target = Math.min(VMAX, Math.sqrt(Math.max(0, 2*DEC*Math.max(dist,0)))); if (dist < 2) target = 0; }
+  v = v < target ? Math.min(target, v + ACC*dt) : Math.max(target, v - DEC*dt*1.5);
+  x += v*dt;
+  if (x > W + 20){ x = -CAR_W - 10; colorNuevo(); }
+  if (frenar && x + CAR_W > stopLine) x = stopLine - CAR_W;
+  car.style.left = x + 'px';
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* Modo automático */
+const SEQ = [['AVANZAR',5000],['PREPARARSE',2500],['DETENERSE',7000]];
+let autoOn=false, i=0, t0=0, dur=0, raf=null;
+const btn = $('auto'), prog = $('prog');
+function paso(){ const [f,d]=SEQ[i]; cambiar(f); t0=performance.now(); dur=d; }
+function tick(now){
+  if(!autoOn) return;
+  const p = Math.min(1,(now-t0)/dur);
+  prog.style.width = (p*100)+'%';
+  if(p>=1){ i=(i+1)%SEQ.length; paso(); }
+  raf = requestAnimationFrame(tick);
+}
+function iniciarAuto(){ autoOn=true; i=0; btn.classList.add('on'); btn.firstChild.textContent='⏸ Pausar'; paso(); raf=requestAnimationFrame(tick); }
+function pararAuto(){ autoOn=false; cancelAnimationFrame(raf); btn.classList.remove('on'); btn.firstChild.textContent='▶ Auto'; prog.style.width='0'; }
+btn.addEventListener('click', ()=> autoOn ? pararAuto() : iniciarAuto());
+
+cambiar('AVANZAR');
+</script>
+</body>
+</html>
